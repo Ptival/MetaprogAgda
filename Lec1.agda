@@ -12,9 +12,10 @@ infixr 4 _,_
 
 zip0 : {S T : Set} -> List S -> List T -> List (S * T)
 zip0 <> <> = <>
-zip0 <> (x , ts) = <> -- :(
-zip0 (x , ss) <> = <> -- :(
+zip0 <> (x , ts) = <>
+zip0 (x , ss) <> = <>
 zip0 (s , ss) (t , ts) = (s , t) , zip0 ss ts
+
 
 data Nat : Set where
   zero  :         Nat
@@ -29,15 +30,16 @@ length <>        = zero
 length (x , xs)  = suc (length xs)
 
 -- what is the type of the zip we want?
-
+{-
 zip' : {S T : Set}(ss : List S)(ts : List T) ->
        length ss == length ts ->
        Sg (List (S * T)) \ sts -> length sts == length ss
 zip' <> <> q = <> , refl
 zip' <> (x , ts) ()
 zip' (x , ss) <> ()
-zip' (s , ss) (t , ts) q with zip' ss ts {!!} -- meh, theorem proving
-zip' (s , ss) (t , ts) q | sts , q' = {!!} -- meh, theorem proving
+zip' (s , ss) (t , ts) q with zip' ss ts {!!}
+zip' (s , ss) (t , ts) q | sts , q' = ((s , t) , sts) , {!!}
+-}
 
 -- vectors
 
@@ -47,7 +49,7 @@ data Vec (X : Set) : Nat -> Set where
 
 zip1 : forall {n S T} -> Vec S n -> Vec T n -> Vec (S * T) n
 zip1 <> <> = <>
-zip1 (x , ss) (y , ts) = (x , y) , zip1 ss ts
+zip1 (x , ss) (x₁ , ts) = (x , x₁) , zip1 ss ts
 
 vec : forall {n X} -> X -> Vec X n
 vec {zero} x = <>
@@ -55,14 +57,12 @@ vec {suc n} x = x , vec x
 
 vapp :  forall {n S T} -> Vec (S -> T) n -> Vec S n -> Vec T n
 vapp <> <> = <>
-vapp (f , fs) (x , xs) = f x , vapp fs xs
+vapp (f , fs) (s , ss) = f s , vapp fs ss
 
-vmap : forall {n S T} -> (S -> T) -> Vec S n -> Vec T n
-vmap f <> = <>
-vmap f (x , ss) = f x , vmap f ss
-
+{-
 zip2 : forall {n S T} -> Vec S n -> Vec T n -> Vec (S * T) n
-zip2 ss ts = vapp (vapp (vec _,_) ss) ts
+zip2 ss ts = {!!}
+-}
 
 -- applicative and traversable structure
 
@@ -91,15 +91,13 @@ applicativeFun = record
   ;  _<*>_   = \ f a s -> f s (a s)    -- also known as S (share environment)
   }
 
+
 applicativeId : Applicative id
-applicativeId = record { pure = id; _<*>_ = id }
+applicativeId = {!!}
 
 applicativeComp : forall {F G} ->
   Applicative F -> Applicative G -> Applicative (F o G)
-applicativeComp aF aG = record
-  { pure = \ x -> pure (pure {{aG}} x)
-  ; _<*>_ = \ af ax -> (pure {{aF}} _<*>_ <*> af) <*> ax
-  }
+applicativeComp aF aG = {!!}
 
 record Monoid (X : Set) : Set where
   infixr 4 _&_
@@ -107,7 +105,7 @@ record Monoid (X : Set) : Set where
     neut  : X
     _&_   : X -> X -> X
   monoidApplicative : Applicative \ _ -> X
-  monoidApplicative = record { pure = \ _ -> neut; _<*>_ = _&_ }
+  monoidApplicative = {!!}
 open Monoid {{...}} public -- it's not obvious that we'll avoid ambiguity
 
 record Traversable (F : Set -> Set) : Set1 where
@@ -130,6 +128,7 @@ crush :  forall {F X Y}{{TF : Traversable F}}{{M : Monoid Y}} ->
 crush {{M = M}} =
   traverse {T = One}{{AG = monoidApplicative {{M}}}}  -- |T| arbitrary
 
+
 record Normal : Set1 where
   constructor _/_
   field
@@ -146,24 +145,25 @@ VecN n = One / \ _ -> n
 ListN : Normal
 ListN = Nat / id
 
+
 -- Normal Functor Kit
 
 K : Set -> Normal
-K A = A / (\ _ -> 0)
+K A = A / (\ a -> 0)
 
 I : Normal
 I = One / (\ _ -> 1)
 
 _+Nat_ : Nat -> Nat -> Nat
-zero +Nat y = y
-suc x +Nat y = suc (x +Nat y)
+x +Nat y = {!!}
 
 _+N_ : Normal -> Normal -> Normal
-(ShF / szF) +N (ShG / szG) = (ShF + ShG) / ^ szF <?> szG
+(ShF / szF) +N (ShG / szG) = {!!}
 
 _*N_ : Normal -> Normal -> Normal
-(ShF / szF) *N (ShG / szG) = (ShF * ShG) / (^ (\ f g -> szF f +Nat szG g))
+(ShF / szF) *N (ShG / szG) = (ShF * ShG) / vv (\ fs gs -> szF fs +Nat szG gs)
 
+{-
 nInj : forall {X}(F G : Normal) -> <! F !>N X + <! G !>N X -> <! F +N G !>N X
 nInj F G forg = {!!}
 
@@ -180,13 +180,14 @@ nPair : forall {X}(F G : Normal) -> <! F !>N X * <! G !>N X -> <! F *N G !>N X
 nPair F G fxgx = {!!}
 
 -- Normal and Traversable
+-}
 
 sumMonoid : Monoid Nat
 sumMonoid = {!!}
 
 normalTraversable : (F : Normal) -> Traversable <! F !>N
 normalTraversable F = record
-  { traverse = \ {{aG}} f -> ^ \ s xs -> pure {{aG}}  (_,_ s) <*> traverse f xs }
+  { traverse = \ {{aG}} f -> vv \ s xs -> pure {{aG}}  (_,_ s) <*> traverse f xs }
 
 sizeT : forall {F}{{TF : Traversable F}}{X} -> F X -> Nat
 sizeT = crush (\ _ -> 1)
@@ -206,12 +207,12 @@ NatT : Set
 NatT = Tree NatN
 
 zeroN : NatT
-zeroN = {!!}
+zeroN = <$ ({!!} , {!!}) $>
 
 sucN : NatT -> NatT
 sucN n = {!!}
 
-
+{-
 -- theorem-proving
 -- talk about equality
 
@@ -275,3 +276,5 @@ record ApplicativeOKP F {{AF : Applicative F}} : Set1 where
     ;  endoFunctorCo = \ f g r ->
          {!!}
     }
+
+-}
