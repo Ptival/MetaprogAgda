@@ -32,19 +32,23 @@ data Vec (X : Set) : Nat -> Set where
   _,_  : {n : Nat} -> X -> Vec X n ->  Vec X (suc n)
 
 zip1 : forall {n S T} -> Vec S n -> Vec T n -> Vec (S * T) n
-zip1 ss ts = {!!}
+zip1 <> <> = <>
+zip1 (x , ss) (y , ts) = (x , y) , zip1 ss ts
 
 vec : forall {n X} -> X -> Vec X n
-vec {n} x = {!!}
+vec {zero} x = <>
+vec {suc n} x = x , vec x
 
 vapp :  forall {n S T} -> Vec (S -> T) n -> Vec S n -> Vec T n
-vapp fs ss = {!!}
+vapp <> <> = <>
+vapp (f , fs) (x , xs) = f x , vapp fs xs
 
 vmap : forall {n S T} -> (S -> T) -> Vec S n -> Vec T n
-vmap f ss = {!!}
+vmap f <> = <>
+vmap f (x , ss) = f x , vmap f ss
 
 zip2 : forall {n S T} -> Vec S n -> Vec T n -> Vec (S * T) n
-zip2 ss ts = {!!}
+zip2 ss ts = vapp (vapp (vec _,_) ss) ts
 
 record EndoFunctor (F : Set -> Set) : Set1 where
   field
@@ -82,13 +86,25 @@ record Monad (F : Set -> Set) : Set1 where
 open Monad {{...}} public
 
 monadVec : {n : Nat} -> Monad \ X -> Vec X n
-monadVec = {!!}
+monadVec = λ {n} → record
+  { return = vec
+  ; _>>=_ = λ x f → joinVec (vmap f x)
+  }
+  where
+    dropHead : {T : Set} {n : Nat} -> Vec T (suc n) -> Vec T n
+    dropHead (_ , v) = v
+    joinVec : {T : Set} {n : Nat} -> Vec (Vec T n) n -> Vec T n
+    joinVec {T} {zero}   <> = <>
+    joinVec {T} {suc n'} ((x , _) , vs) = x , joinVec (vmap dropHead vs)
 
 applicativeId : Applicative id
-applicativeId = {!!}
+applicativeId = record { pure = id; _<*>_ = id }
 
 applicativeComp : forall {F G} -> Applicative F -> Applicative G -> Applicative (F o G)
-applicativeComp aF aG = {!!}
+applicativeComp aF aG = record
+  { pure = pure {{aF}} o pure {{aG}}
+  ; _<*>_ = \ af ax -> (pure {{aF}} _<*>_ <*> af) <*> ax
+  }
 
 record Monoid (X : Set) : Set where
   infixr 4 _&_
@@ -96,7 +112,7 @@ record Monoid (X : Set) : Set where
     neut  : X
     _&_   : X -> X -> X
   monoidApplicative : Applicative \ _ -> X
-  monoidApplicative = {!!}
+  monoidApplicative = record { pure = \ _ -> neut; _<*>_ = _&_ }
 open Monoid {{...}} public -- it's not obvious that we'll avoid ambiguity
 
 --Show by construction that the pointwise product of |Applicative|s is
@@ -118,7 +134,7 @@ traversableVec = record { traverse = vtr } where
   vtr {{aG}} f (s , ss)  = pure {{aG}} _,_ <*> f s <*> vtr f ss
 
 transpose : forall {m n X} -> Vec (Vec X n) m -> Vec (Vec X m) n
-transpose = {!!}
+transpose = traverse id
 
 crush :  forall {F X Y}{{TF : Traversable F}}{{M : Monoid Y}} ->
          (X -> Y) -> F X -> Y
@@ -149,16 +165,18 @@ ListN = Nat / id
 
 
 K : Set -> Normal
-K A = {!!}
+K A = A / (\ _ -> 0)
 
 I : Normal
-I = {!!}
+I = One / (\ _ -> 1)
 
 _+Nat_ : Nat -> Nat -> Nat
-x +Nat y = {!!}
+zero +Nat y = y
+suc x +Nat y = suc (x +Nat y)
 
 _*Nat_ : Nat -> Nat -> Nat
-x *Nat y = {!!}
+zero *Nat _ = zero
+suc x *Nat y = {!!}
 
 _+N_ : Normal -> Normal -> Normal
 (ShF / szF) +N (ShG / szG) = (ShF + ShG) / ^ szF <?> szG

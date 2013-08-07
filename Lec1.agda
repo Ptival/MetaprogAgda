@@ -11,7 +11,10 @@ data List (X : Set) : Set where
 infixr 4 _,_
 
 zip0 : {S T : Set} -> List S -> List T -> List (S * T)
-zip0 ss ts = {!!}
+zip0 <> <> = <>
+zip0 <> (x , ts) = <> -- :(
+zip0 (x , ss) <> = <> -- :(
+zip0 (s , ss) (t , ts) = (s , t) , zip0 ss ts
 
 data Nat : Set where
   zero  :         Nat
@@ -30,7 +33,11 @@ length (x , xs)  = suc (length xs)
 zip' : {S T : Set}(ss : List S)(ts : List T) ->
        length ss == length ts ->
        Sg (List (S * T)) \ sts -> length sts == length ss
-zip' ss ts q = {!!}
+zip' <> <> q = <> , refl
+zip' <> (x , ts) ()
+zip' (x , ss) <> ()
+zip' (s , ss) (t , ts) q with zip' ss ts {!!} -- meh, theorem proving
+zip' (s , ss) (t , ts) q | sts , q' = {!!} -- meh, theorem proving
 
 -- vectors
 
@@ -39,17 +46,23 @@ data Vec (X : Set) : Nat -> Set where
   _,_  : {n : Nat} -> X -> Vec X n ->  Vec X (suc n)
 
 zip1 : forall {n S T} -> Vec S n -> Vec T n -> Vec (S * T) n
-zip1 ss ts = {!!}
-
+zip1 <> <> = <>
+zip1 (x , ss) (y , ts) = (x , y) , zip1 ss ts
 
 vec : forall {n X} -> X -> Vec X n
-vec {n} x = {!!}
+vec {zero} x = <>
+vec {suc n} x = x , vec x
 
 vapp :  forall {n S T} -> Vec (S -> T) n -> Vec S n -> Vec T n
-vapp fs ss = {!!}
+vapp <> <> = <>
+vapp (f , fs) (x , xs) = f x , vapp fs xs
+
+vmap : forall {n S T} -> (S -> T) -> Vec S n -> Vec T n
+vmap f <> = <>
+vmap f (x , ss) = f x , vmap f ss
 
 zip2 : forall {n S T} -> Vec S n -> Vec T n -> Vec (S * T) n
-zip2 ss ts = {!!}
+zip2 ss ts = vapp (vapp (vec _,_) ss) ts
 
 -- applicative and traversable structure
 
@@ -79,11 +92,14 @@ applicativeFun = record
   }
 
 applicativeId : Applicative id
-applicativeId = {!!}
+applicativeId = record { pure = id; _<*>_ = id }
 
 applicativeComp : forall {F G} ->
   Applicative F -> Applicative G -> Applicative (F o G)
-applicativeComp aF aG = {!!}
+applicativeComp aF aG = record
+  { pure = \ x -> pure (pure {{aG}} x)
+  ; _<*>_ = \ af ax -> (pure {{aF}} _<*>_ <*> af) <*> ax
+  }
 
 record Monoid (X : Set) : Set where
   infixr 4 _&_
@@ -91,7 +107,7 @@ record Monoid (X : Set) : Set where
     neut  : X
     _&_   : X -> X -> X
   monoidApplicative : Applicative \ _ -> X
-  monoidApplicative = {!!}
+  monoidApplicative = record { pure = \ _ -> neut; _<*>_ = _&_ }
 open Monoid {{...}} public -- it's not obvious that we'll avoid ambiguity
 
 record Traversable (F : Set -> Set) : Set1 where
@@ -133,19 +149,20 @@ ListN = Nat / id
 -- Normal Functor Kit
 
 K : Set -> Normal
-K A = {!!}
+K A = A / (\ _ -> 0)
 
 I : Normal
-I = {!!}
+I = One / (\ _ -> 1)
 
 _+Nat_ : Nat -> Nat -> Nat
-x +Nat y = {!!}
+zero +Nat y = y
+suc x +Nat y = suc (x +Nat y)
 
 _+N_ : Normal -> Normal -> Normal
-(ShF / szF) +N (ShG / szG) = {!!}
+(ShF / szF) +N (ShG / szG) = (ShF + ShG) / ^ szF <?> szG
 
 _*N_ : Normal -> Normal -> Normal
-(ShF / szF) *N (ShG / szG) = {!!}
+(ShF / szF) *N (ShG / szG) = (ShF * ShG) / (^ (\ f g -> szF f +Nat szG g))
 
 nInj : forall {X}(F G : Normal) -> <! F !>N X + <! G !>N X -> <! F +N G !>N X
 nInj F G forg = {!!}
@@ -183,7 +200,7 @@ data Tree (N : Normal) : Set where
   <$_$> : <! N !>N (Tree N) -> Tree N
 
 NatN : Normal
-NatN = {!!}
+NatN = K One +N I
 
 NatT : Set
 NatT = Tree NatN
