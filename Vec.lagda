@@ -361,6 +361,7 @@ zip2 ss ts = vapp (vapp (vec _,_) ss) ts
 %endif
 \end{exe}
 
+%format Fin = "\D{Fin}"
 \begin{exe}[Finite sets and projection from vectors]
 We may define a type of finite sets, suitable for indexing into vectors, as follows:
 \begin{code}
@@ -651,7 +652,7 @@ Before we go any further, let us establish that the type |Sg (S : Set)
 (T : S -> Set)| has elements |(s : S) , (t : T s)|, so that the type
 of the second component depends on the value of the first. From |p :
 Sg S T|, we may project |fst p : S| and |snd p : T (fst p)|, but I
-also define |^| to be a low precedence uncurrying operator, so that |vv \
+also define |vv| to be a low precedence uncurrying operator, so that |vv \
 s t -> ...| gives access to the components.
 
 On the one hand, we may take |S * T = Sg S \ _ -> T|
