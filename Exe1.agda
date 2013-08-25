@@ -58,10 +58,12 @@ data Fin : Nat -> Set where
   suc  : {n : Nat} -> Fin n -> Fin (suc n)
 
 proj : forall {n X} -> Vec X n -> Fin n -> X
-proj xs i = {!!}
+proj (x , xs) zero = x
+proj (x , xs) (suc i) = proj xs i
 
 tabulate : forall {n X} -> (Fin n -> X) -> Vec X n
-tabulate {n} f = {!!}
+tabulate {zero} f = <>
+tabulate {suc n} f = (f zero) , tabulate (f o suc)
 
 -- Functors and Applicatives
 
@@ -163,10 +165,12 @@ What other structure does it preserve?-}
 --\section{Arithmetic}
 
 _+Nat_ : Nat -> Nat -> Nat
-x +Nat y = {!!}
+zero  +Nat y = y
+suc x +Nat y = suc (x +Nat y)
 
 _*Nat_ : Nat -> Nat -> Nat
-x *Nat y = {!!}
+zero  *Nat y = zero
+suc x *Nat y = y +Nat (x *Nat y)
 
 
 --\section{Normal Functors}
@@ -215,13 +219,14 @@ nOut F G xs' with nCase F G xs'
 nOut F G .(nInj F G xs) | from xs = xs
 
 _++_ : forall {m n X} -> Vec X m -> Vec X n -> Vec X (m +Nat n)
-xs ++ ys = {!!}
+<> ++ ys = ys
+(x , xs) ++ ys = x , xs ++ ys
 
 nPair : forall {X}(F G : Normal) -> <! F !>N X * <! G !>N X -> <! F *N G !>N X
-nPair F G fxgx = {!!}
+nPair F G ((sF , vF) , (sG , vG)) = (sF , sG) , (vF ++ vG)
 
 listNMonoid : {X : Set} -> Monoid (<! ListN !>N X)
-listNMonoid = {!!}
+listNMonoid = λ {X} → record { neut = 0 , <>; _&_ = {!!} }
 
 sumMonoid : Monoid Nat
 sumMonoid = record { neut = 0; _&_ = _+Nat_ }
